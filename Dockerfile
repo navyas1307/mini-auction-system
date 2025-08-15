@@ -36,4 +36,6 @@ ENV NODE_ENV=production
 ENV PORT=5000
 
 # Start backend
-CMD ["node", "backend/server.js"]
+WORKDIR /app/backend
+CMD ["node", "server.js"]
+
