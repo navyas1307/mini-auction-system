@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import socketService from '../services/socketService';
 
+// API base URL - use relative URL for production, localhost for development
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? (process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000')
+  : '';  // Empty string for production (same domain)
+
 const ParticipateAuction = ({ onBack }) => {
   const [auctions, setAuctions] = useState([]);
   const [selectedAuction, setSelectedAuction] = useState(null);
@@ -68,21 +73,23 @@ const ParticipateAuction = ({ onBack }) => {
 
   const fetchAuctions = async () => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/auctions/active`);
+      const response = await axios.get(`${API_BASE_URL}/api/auctions/active`);
       setAuctions(response.data);
     } catch (error) {
       console.error('Error fetching auctions:', error);
+      setMessage('Error loading auctions. Please try again.');
     }
   };
 
   const selectAuction = async (auction) => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/auctions/${auction.id}`);
+      const response = await axios.get(`${API_BASE_URL}/api/auctions/${auction.id}`);
       setSelectedAuction(response.data);
       // Ensure currentBid is a number
       setCurrentBid(parseFloat(response.data.currentHighestBid));
     } catch (error) {
       console.error('Error fetching auction details:', error);
+      setMessage('Error loading auction details. Please try again.');
     }
   };
 
