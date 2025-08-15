@@ -8,7 +8,13 @@ class SocketService {
 
   connect() {
     if (!this.socket) {
-      this.socket = io(process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000');
+      // For production, connect to same domain. For development, use localhost
+      const socketUrl = process.env.NODE_ENV === 'development' 
+        ? (process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000')
+        : window.location.origin; // Use current domain in production
+      
+      console.log('Connecting to socket at:', socketUrl);
+      this.socket = io(socketUrl);
       
       this.socket.on('connect', () => {
         this.isConnected = true;
@@ -18,6 +24,10 @@ class SocketService {
       this.socket.on('disconnect', () => {
         this.isConnected = false;
         console.log('Disconnected from server');
+      });
+
+      this.socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
       });
     }
     return this.socket;
@@ -33,12 +43,14 @@ class SocketService {
 
   joinAuction(auctionId) {
     if (this.socket) {
+      console.log('Joining auction:', auctionId);
       this.socket.emit('joinAuction', auctionId);
     }
   }
 
   placeBid(bidData) {
     if (this.socket) {
+      console.log('Placing bid:', bidData);
       this.socket.emit('placeBid', bidData);
     }
   }
