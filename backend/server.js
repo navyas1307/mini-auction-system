@@ -86,8 +86,88 @@ if (publicPath) {
   console.log('Tried paths:', possiblePublicPaths);
 }
 
+// Debug middleware to log all API requests
+app.use('/api', (req, res, next) => {
+  console.log(`📡 API Request: ${req.method} ${req.path}`);
+  console.log('📦 Request body:', req.body);
+  next();
+});
+
+// Test route to verify API is working
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'API is working!', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Debug route to check Redis connection
+app.get('/api/debug', async (req, res) => {
+  try {
+    const redisStatus = await redisService.getConnectionStatus();
+    res.json({
+      database: 'Connected',
+      redis: redisStatus,
+      models: {
+        auction: typeof Auction !== 'undefined',
+        bid: typeof Bid !== 'undefined'
+      },
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        port: process.env.PORT,
+        databaseUrl: process.env.DATABASE_URL ? 'Set' : 'Not set',
+        upstashRedisUrl: process.env.UPSTASH_REDIS_URL ? 'Set' : 'Not set'
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // API Routes - MUST come before the catch-all handler
-app.use('/api/auctions', auctionRoutes);
+try {
+  // Check if the route file exists and dependencies are available
+  console.log('🔍 Checking auction route dependencies...');
+  
+  // Test if models are available
+  console.log('📦 Auction model available:', typeof Auction !== 'undefined');
+  console.log('📦 Bid model available:', typeof Bid !== 'undefined');
+  
+  // Test Redis service
+  try {
+    await redisService.getCurrentHighestBid(1); // Test call
+    console.log('✅ Redis service is available');
+  } catch (redisError) {
+    console.log('⚠️ Redis service issue:', redisError.message);
+  }
+  
+  app.use('/api/auctions', auctionRoutes);
+  console.log('✅ Auction routes loaded successfully');
+} catch (error) {
+  console.error('❌ Error loading auction routes:', error.message);
+  console.error('Stack:', error.stack);
+  
+  // Fallback routes if the main routes file fails
+  app.get('/api/auctions/active', (req, res) => {
+    res.status(500).json({ 
+      error: 'Auction routes not available', 
+      details: error.message,
+      suggestion: 'Check server logs for missing dependencies'
+    });
+  });
+  
+  app.post('/api/auctions/create', (req, res) => {
+    res.status(500).json({ 
+      error: 'Auction creation not available', 
+      details: error.message,
+      suggestion: 'Check server logs for missing dependencies'
+    });
+  });
+}
 
 // Catch-all handler: send back React's index.html file for any non-API routes
 app.get('*', (req, res) => {
