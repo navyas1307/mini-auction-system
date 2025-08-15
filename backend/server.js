@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { initializeDatabase, Auction, Bid } from './models/index.js';
 import auctionRoutes from './routes/auctions.js';
 import * as redisService from './services/redisService.js';
+import fs from 'fs';
 import sgMail from '@sendgrid/mail';
 
 dotenv.config();
@@ -30,21 +31,85 @@ if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
+// Debug: Check if public directory and index.html exist
+const publicDir = path.join(__dirname, 'public');
+const indexPath = path.join(publicDir, 'index.html');
+
+console.log('📂 Current directory:', __dirname);
+console.log('📂 Public directory:', publicDir);
+console.log('📄 Index file:', indexPath);
+
+try {
+  if (fs.existsSync(publicDir)) {
+    console.log('✅ Public directory exists');
+    const files = fs.readdirSync(publicDir);
+    console.log('📋 Files in public:', files.slice(0, 10)); // Show first 10 files
+  } else {
+    console.log('❌ Public directory does not exist');
+  }
+  
+  if (fs.existsSync(indexPath)) {
+    console.log('✅ index.html exists');
+  } else {
+    console.log('❌ index.html does not exist');
+  }
+} catch (error) {
+  console.error('❌ Error checking files:', error.message);
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // Serve static files from the React build (public directory)
-app.use(express.static(path.join(__dirname, 'public')));
+// Try multiple possible paths for the public directory
+const possiblePublicPaths = [
+  path.join(__dirname, 'public'),
+  path.join(__dirname, '..', 'public'), 
+  path.join(process.cwd(), 'backend', 'public'),
+  path.join(process.cwd(), 'public')
+];
+
+let publicPath = null;
+for (const testPath of possiblePublicPaths) {
+  if (fs.existsSync(testPath)) {
+    publicPath = testPath;
+    console.log(`✅ Found public directory at: ${testPath}`);
+    break;
+  }
+}
+
+if (publicPath) {
+  app.use(express.static(publicPath));
+} else {
+  console.log('❌ Could not find public directory at any expected location');
+  console.log('Tried paths:', possiblePublicPaths);
+}
 
 // API Routes - MUST come before the catch-all handler
 app.use('/api/auctions', auctionRoutes);
 
 // Catch-all handler: send back React's index.html file for any non-API routes
 app.get('*', (req, res) => {
+  console.log(`📥 Request for: ${req.path}`);
+  
   // Only serve index.html for non-API routes
   if (!req.path.startsWith('/api/')) {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    const indexFile = publicPath ? path.join(publicPath, 'index.html') : path.join(__dirname, 'public', 'index.html');
+    
+    if (fs.existsSync(indexFile)) {
+      console.log(`✅ Serving index.html for: ${req.path}`);
+      res.sendFile(indexFile);
+    } else {
+      console.log(`❌ index.html not found at: ${indexFile}`);
+      res.status(404).send(`
+        <h1>React App Not Found</h1>
+        <p>The React build files are not available.</p>
+        <p>Expected location: ${indexFile}</p>
+        <p>Current directory: ${__dirname}</p>
+        <p>Process CWD: ${process.cwd()}</p>
+      `);
+    }
   } else {
     res.status(404).json({ error: 'API endpoint not found' });
   }
