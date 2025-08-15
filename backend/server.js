@@ -3,6 +3,8 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { initializeDatabase, Auction, Bid } from './models/index.js';
 import auctionRoutes from './routes/auctions.js';
 import * as redisService from './services/redisService.js';
@@ -19,6 +21,10 @@ const io = new Server(server, {
   }
 });
 
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Initialize SendGrid if API key is provided
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -27,10 +33,22 @@ if (process.env.SENDGRID_API_KEY) {
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
-// Routes
+// Serve static files from the React build (public directory)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// API Routes - MUST come before the catch-all handler
 app.use('/api/auctions', auctionRoutes);
+
+// Catch-all handler: send back React's index.html file for any non-API routes
+app.get('*', (req, res) => {
+  // Only serve index.html for non-API routes
+  if (!req.path.startsWith('/api/')) {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } else {
+    res.status(404).json({ error: 'API endpoint not found' });
+  }
+});
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
