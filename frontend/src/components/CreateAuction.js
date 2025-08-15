@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
+// API base URL - use relative URL for production, localhost for development
+const API_BASE_URL = process.env.NODE_ENV === 'development' 
+  ? (process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000')
+  : '';  // Empty string for production (same domain)
+
 const CreateAuction = ({ onBack }) => {
   const [formData, setFormData] = useState({
     itemName: '',
@@ -28,7 +33,7 @@ const CreateAuction = ({ onBack }) => {
 
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/auctions/create`,
+        `${API_BASE_URL}/api/auctions/create`,
         {
           ...formData,
           startingPrice: parseFloat(formData.startingPrice),
@@ -50,6 +55,7 @@ const CreateAuction = ({ onBack }) => {
         });
       }
     } catch (error) {
+      console.error('Error creating auction:', error);
       setMessage('Error creating auction. Please try again.');
     } finally {
       setLoading(false);
