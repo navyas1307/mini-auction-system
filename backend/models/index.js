@@ -30,7 +30,7 @@ const sequelize = new Sequelize(getDatabaseUrl(), {
   }
 });
 
-// Define Auction model
+// Define Auction model with image support
 export const Auction = sequelize.define('Auction', {
   id: {
     type: DataTypes.INTEGER,
@@ -43,6 +43,10 @@ export const Auction = sequelize.define('Auction', {
   },
   description: {
     type: DataTypes.TEXT
+  },
+  images: {
+    type: DataTypes.JSONB, // Store array of image objects as JSONB
+    defaultValue: []
   },
   startingPrice: {
     type: DataTypes.DECIMAL(10, 2),
