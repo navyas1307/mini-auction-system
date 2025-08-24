@@ -6,6 +6,54 @@ import './App.css';
 function App() {
   const [currentView, setCurrentView] = useState('home');
 
+  const renderNavigation = () => (
+    <nav className="nav-header">
+      <div className="nav-container">
+        <a href="#" className="logo" onClick={() => setCurrentView('home')}>
+          <div className="logo-icon">A</div>
+          AuctionHub Pro
+        </a>
+        {currentView !== 'home' && (
+          <button 
+            className="btn btn-secondary"
+            onClick={() => setCurrentView('home')}
+          >
+            Back to Home
+          </button>
+        )}
+      </div>
+    </nav>
+  );
+
+  const renderFeatures = () => (
+    <div className="features-section">
+      <div className="feature-card">
+        <div className="feature-icon">RT</div>
+        <h3 className="feature-title">Real-Time Bidding Technology</h3>
+        <p className="feature-description">
+          Experience lightning-fast bid updates with our advanced WebSocket infrastructure. 
+          Every bid is processed and broadcast instantly to all participants.
+        </p>
+      </div>
+      <div className="feature-card">
+        <div className="feature-icon">SEC</div>
+        <h3 className="feature-title">Enterprise Security</h3>
+        <p className="feature-description">
+          Bank-level encryption and multi-layer security protocols protect your transactions. 
+          All auction data is encrypted and stored securely.
+        </p>
+      </div>
+      <div className="feature-card">
+        <div className="feature-icon">24/7</div>
+        <h3 className="feature-title">Global Marketplace</h3>
+        <p className="feature-description">
+          Connect with buyers and sellers worldwide. Our platform operates 24/7 
+          with automated notifications and seamless payment processing.
+        </p>
+      </div>
+    </div>
+  );
+
   const renderCurrentView = () => {
     switch (currentView) {
       case 'create':
@@ -15,22 +63,34 @@ function App() {
       default:
         return (
           <div className="home-container">
-            <h1>Mini Auction System</h1>
-            <p>Welcome to our real-time auction platform!</p>
-            <div className="button-container">
-              <button 
-                className="main-button create-btn"
-                onClick={() => setCurrentView('create')}
-              >
-                Create Auction
-              </button>
-              <button 
-                className="main-button participate-btn"
-                onClick={() => setCurrentView('participate')}
-              >
-                Participate in Auction
-              </button>
+            <div className="hero-section">
+              <h1 className="hero-title">
+                The Premier <span className="gradient-text">Auction Platform</span>
+              </h1>
+              <p className="hero-subtitle">
+                Join thousands of buyers and sellers in our secure, real-time marketplace. 
+                Create auctions, place bids, and complete transactions with confidence.
+              </p>
+              <div className="cta-buttons">
+                <button 
+                  className="cta-button cta-primary"
+                  onClick={() => setCurrentView('create')}
+                >
+                  Start Selling
+                </button>
+                <button 
+                  className="cta-button cta-secondary"
+                  onClick={() => setCurrentView('participate')}
+                >
+                  Browse Auctions
+                </button>
+              </div>
             </div>
+
+            {renderFeatures()}
+
+           
+            
           </div>
         );
     }
@@ -38,6 +98,7 @@ function App() {
 
   return (
     <div className="App">
+      {renderNavigation()}
       {renderCurrentView()}
     </div>
   );
