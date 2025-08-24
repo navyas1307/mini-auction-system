@@ -4,19 +4,46 @@ import * as redisService from '../services/redisService.js';
 
 const router = express.Router();
 
+// Helper function to validate and process images
+const processImages = (images) => {
+  if (!images || !Array.isArray(images)) {
+    return [];
+  }
+  
+  // Validate each image
+  const validImages = images.filter(image => {
+    if (!image || typeof image !== 'object') return false;
+    if (!image.data || !image.data.startsWith('data:image/')) return false;
+    if (!image.name || typeof image.name !== 'string') return false;
+    
+    // Check file size (base64 string length roughly corresponds to file size)
+    const sizeInBytes = image.data.length * 0.75; // Rough estimate for base64
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    
+    return sizeInBytes <= maxSize;
+  });
+  
+  // Limit to maximum 5 images
+  return validImages.slice(0, 5);
+};
+
 // Create a new auction
 router.post('/create', async (req, res) => {
   try {
-    const { itemName, description, startingPrice, bidIncrement, duration, sellerName, sellerEmail } = req.body;
+    const { itemName, description, startingPrice, bidIncrement, duration, sellerName, sellerEmail, images } = req.body;
     
     // Validate input
     if (!itemName || !startingPrice || !bidIncrement || !duration || !sellerName || !sellerEmail) {
       return res.status(400).json({ error: 'All required fields must be provided' });
     }
 
+    // Process and validate images
+    const processedImages = processImages(images);
+
     const auction = await Auction.create({
       itemName,
       description,
+      images: processedImages,
       startingPrice: parseFloat(startingPrice),
       bidIncrement: parseFloat(bidIncrement),
       duration: parseInt(duration),
@@ -35,7 +62,7 @@ router.post('/create', async (req, res) => {
       }
     }, duration * 60 * 1000); // Convert minutes to milliseconds
 
-    console.log(`✅ Created auction ${auction.id} for ${itemName}, duration: ${duration} minutes`);
+    console.log(`✅ Created auction ${auction.id} for ${itemName}, duration: ${duration} minutes, images: ${processedImages.length}`);
     res.json({ 
       success: true, 
       auction: auction.toJSON(),
